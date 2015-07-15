@@ -3,9 +3,11 @@
 #include <math.h>
 #include <iostream>
 #include <vector>
+#include <queue>
 #include <algorithm> 
 
 using std::vector;
+using std::cout; using std::endl;
 
 tf::Pose LikelyHoodField::likelyHoodFieldModel(const LaserData& data) {
     auto const& coarsest = fieldMaps.back(); 
@@ -25,8 +27,8 @@ tf::Pose LikelyHoodField::likelyHoodFieldModel(const LaserData& data) {
         Entry entry{prob, xt0, xt1, yt0, yt1, max_resolution, poseindex};
         heap.push(entry);
     }
+
     Entry best = extractProbability();
-    //TODO input has to be tfScalary 
     tf::Vector3 position;
     position.setX(MAP_WXGX(occupancyGrid, (int) best.xt0));
     position.setY(MAP_WYGY(occupancyGrid, (int) best.yt0));
@@ -35,10 +37,10 @@ tf::Pose LikelyHoodField::likelyHoodFieldModel(const LaserData& data) {
     tf::Quaternion orientation = tf::createQuaternionFromYaw(
             (double) (best.poseindex * theta_steps) / 180.00 * M_PI);
     tf::Pose result(orientation, position);
-    ROS_INFO("Global pose is: %.3f %.3f %.3f",
-            result.getOrigin().x(),
-            result.getOrigin().y(),
-            tf::getYaw(orientation));
+
+    // Clean up
+    heap = std::priority_queue<Entry>();
+    rotatedPoses.clear();
     return result;
 }
 
@@ -46,11 +48,18 @@ const Entry LikelyHoodField::extractProbability() {
     Entry entry = heap.top();
     heap.pop();
     while (entry.resolution != 1) {
-        std::cout << "Current Heap size: " << heap.size() << std::endl;
-        std::cout << "Retrieved element with probabability " << entry.probability 
-            << " and resolution/translation " << entry.resolution << "/ x:" 
-            << entry.xt0 << "," << entry.xt1 << " y: " << entry.yt0 << "," 
-            << entry.yt1 << std::endl;
+        if (heap.empty()) {
+            ROS_ERROR("Warning: Could not find matching pose for laser data."
+                   "Returned pose is wrong.");
+            ROS_INFO("Warning: Could not find matching pose for laser data."
+                   "Returned pose is wrong.");
+           return entry;
+        } 
+        //std::cout << "Current Heap size: " << heap.size() << std::endl;
+        //std::cout << "Retrieved element with probabability " << entry.probability 
+        //    << " and resolution/translation " << entry.resolution << "/ x:" 
+        //    << entry.xt0 << "," << entry.xt1 << " y: " << entry.yt0 << "," 
+        //    << entry.yt1 << std::endl;
         split(entry);
         entry = heap.top();
         heap.pop();
@@ -99,6 +108,8 @@ void LikelyHoodField::computeEntry(size_t xt0, size_t xt1,
             // If the translated and decimated points do not lie in the map
             // these translations are invalid and we don't have to insert a new
             // entry
+            //cout << "out of range: x,y: " << pose.getX() << "," << pose.getY() << endl;
+            //cout << "with max range: x,y" << maxX << "," << maxY << endl;
             return;
         }
         prob += fieldMaps[mapindex].getEntry(decimated_x, decimated_y);
@@ -124,6 +135,7 @@ vector<tf::Vector3> LikelyHoodField::projectData(double const& theta,
 
     for (tf::Vector3 point : data.ranges) {
         tf::Vector3 projectedPoint = pose * point;
+        
         projectedPoint.setX(MAP_GXWX(occupancyGrid, projectedPoint.getX()));
         projectedPoint.setY(MAP_GYWY(occupancyGrid, projectedPoint.getY()));
         projectedPoses.push_back(projectedPoint);
@@ -136,7 +148,6 @@ void LikelyHoodField::initializeLikelyHoodFieldMap() {
     double const z_hit_mult = 1.0 / sqrt(2 * M_PI * sigma_hit);
     auto const randomNoise =  z_rand / max_range;
     auto max_dist = occupancyGrid->max_occ_dist;
-    std::cout << "computing likelyhood field..." << std::endl;
 
     for (int y = 0; y < fieldMaps[0].ySize(); ++y) {
         for (int x = 0; x < fieldMaps[0].xSize(); ++x) {
@@ -150,22 +161,16 @@ void LikelyHoodField::initializeLikelyHoodFieldMap() {
             fieldMaps[0].setEntry(-log(gaussNoise + randomNoise), x, y);
         }
     }
-    std::cout << "Done!" << std::endl;
-    std::cout << "Computing coarse resolution maps...!" << std::endl;
     // Stepwise initialization of coarser maps, until we can represent the whole 
     // grid as a single point in the map
     while (fieldMaps.back().gridSize() != 1) {
         constructCoarserMap(fieldMaps.back());
     }
-    std::cout << "Done!" << std::endl;
 }
 
 void LikelyHoodField::constructCoarserMap(LikelyHoodFieldMap const& source) {
     LikelyHoodFieldMap map(fieldMaps[0].xSize(), fieldMaps[0].ySize(), 
             2 * source.getResolution());
-    std::cout << "Computing resolution " << 2 * source.getResolution() 
-        << " with size (" << map.xSize() << "," << map.ySize() << ")"
-        << std::endl;
 
     for (size_t y = 0; y < source.ySize(); y+=2) {
         for (size_t x = 0; x < source.xSize(); x+=2) {

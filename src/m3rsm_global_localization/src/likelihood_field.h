@@ -6,6 +6,7 @@
 #include "map.h"
 #include <vector>
 #include <queue>
+#include <visualization_msgs/Marker.h>
 
 
 // Each entry corresponds to a rotation (given the pose index), a range of
