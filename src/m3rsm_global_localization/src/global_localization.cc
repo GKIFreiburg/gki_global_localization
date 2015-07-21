@@ -37,7 +37,7 @@ void GlobalLocalization::processMap(const nav_msgs::OccupancyGrid& map_msg) {
             map->cells[i].occ_state = 0; // unknown
         }
     }
-    constexpr double max_occ_dist = 2.0;
+    double max_occ_dist = 2.0;
     map_update_cspace(map, max_occ_dist);
 
     ROS_INFO("Map received. Creating coarser likelyhood maps.");

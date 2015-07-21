@@ -5,13 +5,14 @@
 #include <vector>
 #include <queue>
 #include <algorithm> 
+#include <boost/foreach.hpp>
 
 using std::vector;
 using std::cout; using std::endl;
 
 tf::Pose LikelyHoodField::likelyHoodFieldModel(const LaserData& data) {
-    auto const& coarsest = fieldMaps.back(); 
-    constexpr int theta_steps = 2;
+    const LikelyHoodFieldMap& coarsest = fieldMaps.back();
+    const int theta_steps = 2;
     for (double theta = 0; theta < 360; theta += theta_steps) {
         vector<tf::Vector3> projectedPoses = projectData(theta, data);
         rotatedPoses.push_back(projectedPoses);
@@ -22,9 +23,9 @@ tf::Pose LikelyHoodField::likelyHoodFieldModel(const LaserData& data) {
         size_t yt1 = fieldMaps[0].ySize() - 1;
         // Since the coarsest map has only 1 cell all poses have the same
         // probability
-        auto max_resolution = coarsest.getResolution();
+        double max_resolution = coarsest.getResolution();
         int poseindex = rotatedPoses.size() - 1;
-        Entry entry{prob, xt0, xt1, yt0, yt1, max_resolution, poseindex};
+        Entry entry(prob, xt0, xt1, yt0, yt1, max_resolution, poseindex);
         heap.push(entry);
     }
 
@@ -72,8 +73,8 @@ const Entry LikelyHoodField::extractProbability() {
 }
 
 void LikelyHoodField::split(Entry const& entry) {
-    auto diff_x = (entry.xt1 - entry.xt0) / 2;
-    auto diff_y = (entry.yt1 - entry.yt0) / 2;
+    double diff_x = (entry.xt1 - entry.xt0) / 2;
+    double diff_y = (entry.yt1 - entry.yt0) / 2;
     // Create four new entries, with one quarter of the translation (x/2,y/2)
     // s,t is the start of x,y respectively
     // Entry for x=[s,x/2] y=[t,y/2]
@@ -100,7 +101,7 @@ void LikelyHoodField::computeEntry(size_t xt0, size_t xt1,
     int const mapindex = log2(old.resolution) - 1;
     size_t const maxX = fieldMaps[mapindex].xSize();
     size_t const maxY = fieldMaps[mapindex].ySize();
-    for (tf::Vector3 const& pose : rotatedPoses[old.poseindex]) {
+    BOOST_FOREACH (const tf::Vector3& pose, rotatedPoses[old.poseindex]) {
         // Translate and decimate the poses
         size_t decimated_x = (pose.getX() + xt0) / newRes;
         size_t decimated_y = (pose.getY() + yt0) / newRes;
@@ -133,7 +134,7 @@ vector<tf::Vector3> LikelyHoodField::projectData(double const& theta,
     tf::Quaternion orientation = tf::createQuaternionFromYaw(theta / 180 * M_PI);
     tf::Pose pose(orientation, position);
 
-    for (tf::Vector3 point : data.ranges) {
+    BOOST_FOREACH (tf::Vector3 point, data.ranges) {
         tf::Vector3 projectedPoint = pose * point;
         
         projectedPoint.setX(MAP_GXWX(occupancyGrid, projectedPoint.getX()));
@@ -146,15 +147,15 @@ vector<tf::Vector3> LikelyHoodField::projectData(double const& theta,
 void LikelyHoodField::initializeLikelyHoodFieldMap() {
     double const z_hit_denom = 2.0 * sigma_hit * sigma_hit;
     double const z_hit_mult = 1.0 / sqrt(2 * M_PI * sigma_hit);
-    auto const randomNoise =  z_rand / max_range;
-    auto max_dist = occupancyGrid->max_occ_dist;
+    double const randomNoise =  z_rand / max_range;
+    double max_dist = occupancyGrid->max_occ_dist;
 
     for (int y = 0; y < fieldMaps[0].ySize(); ++y) {
         for (int x = 0; x < fieldMaps[0].xSize(); ++x) {
-            auto pose_x = fieldMaps[0].valueWithoutResolution(x);
-            auto pose_y = fieldMaps[0].valueWithoutResolution(y);
-            auto distToObstacle = distanceToNearestObstacle(pose_x, pose_y);
-            auto gaussNoise = z_hit * z_hit_mult * 
+            int pose_x = fieldMaps[0].valueWithoutResolution(x);
+            int pose_y = fieldMaps[0].valueWithoutResolution(y);
+            double distToObstacle = distanceToNearestObstacle(pose_x, pose_y);
+            double gaussNoise = z_hit * z_hit_mult *
                 exp(-(distToObstacle * distToObstacle) / z_hit_denom);
             // Likelihood fields contain log probabilities, see Wikipedia for
             // further information on log probabilities
@@ -172,24 +173,32 @@ void LikelyHoodField::constructCoarserMap(LikelyHoodFieldMap const& source) {
     LikelyHoodFieldMap map(fieldMaps[0].xSize(), fieldMaps[0].ySize(), 
             2 * source.getResolution());
 
+    vector<size_t> xCoords;
+    xCoords.push_back(-1);
+    xCoords.push_back(0);
+    xCoords.push_back(1);
+    vector<size_t> yCoords;
+    yCoords.push_back(-1);
+    yCoords.push_back(0);
+    yCoords.push_back(1);
     for (size_t y = 0; y < source.ySize(); y+=2) {
         for (size_t x = 0; x < source.xSize(); x+=2) {
             // Convolution kernel of 3: Project a 3x3 grid around the original
             // point and compute the maximum value
-            vector<size_t> xCoords = {x-1, x, x+1};
-            vector<size_t> yCoords = {y-1, y, y+1};
             vector<double> values;
-            for (auto const& x_cord : xCoords) {
-                for (auto const& y_cord : yCoords) {
+            BOOST_FOREACH (size_t const& x_offset, xCoords) {
+            	BOOST_FOREACH (size_t const& y_offset, yCoords) {
                     // Note that values < 0 overflow to max size_t value
-                    if (x_cord < source.xSize() && y_cord < source.ySize()) {
-                        values.push_back(source.getEntry(x_cord,y_cord));
+            		size_t x_coord = x + x_offset;
+            		size_t y_coord = y + y_offset;
+                    if (x_coord < source.xSize() && y_coord < source.ySize()) {
+                        values.push_back(source.getEntry(x_coord,y_coord));
                     }
                 }
             }
             // Note that the max element has the lowest log probability, thus
             // we check for the smallest element
-            auto max = std::min_element(std::begin(values), std::end(values));
+            vector<double>::iterator max = std::min_element(values.begin(), values.end());
             map.setEntry(*max, x/2, y/2);
         }
     }
@@ -199,8 +208,8 @@ void LikelyHoodField::constructCoarserMap(LikelyHoodFieldMap const& source) {
 
 void LikelyHoodField::toPGM(std::string const& filename) {
     int i = 1;
-    for (auto const& fieldMap : fieldMaps) {
-        fieldMap.toPGM(std::to_string(i) + filename);
+    BOOST_FOREACH (LikelyHoodFieldMap const& fieldMap, fieldMaps) {
+        fieldMap.toPGM(boost::lexical_cast<std::string>(i) + filename);
         ++i;
     }
 }
