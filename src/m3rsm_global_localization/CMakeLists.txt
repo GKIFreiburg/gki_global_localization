@@ -25,7 +25,10 @@ add_library(globloc
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 add_executable(m3rsm_global_localization src/glob_loc_main.cc)
+add_executable(global_localize_once src/global_localize_once.cc)
 target_link_libraries(m3rsm_global_localization globloc
+    ${catkin_LIBRARIES})
+target_link_libraries(global_localize_once globloc
     ${catkin_LIBRARIES})
 add_dependencies(m3rsm_global_localization ${catkin_EXPORTED_TARGETS})
 
