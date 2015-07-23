@@ -92,7 +92,7 @@ tf::Stamped<tf::Pose> GlobalLocalization::globalLocalization(const sensor_msgs::
 	if (field == NULL)
 	{
 		ROS_INFO_THROTTLE(1.0, "Waiting for map data...");
-		throw;
+		throw "No map data available!";
 	}
     ROS_INFO("Initiating global localization...");
     data = LaserData(scan, laser_max_range);

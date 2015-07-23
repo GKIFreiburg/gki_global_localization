@@ -1,0 +1,11 @@
+<launch>
+	<node name="global_localization" pkg="m3rsm_global_localization" type="global_localize_once" output="screen">
+		<param name="laser_sigma_hit" value="0.2"/>
+		<param name="laser_z_rand" value="0.05"/>
+		<param name="laser_z_hit" value="0.95"/>
+		<param name="laser_max_range" value="29.0"/>
+
+		<remap from="frontLaser" to="base_scan" />
+		<remap from="localized_pose" to="initialpose" />
+	</node>
+</launch>

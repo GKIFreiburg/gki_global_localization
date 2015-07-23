@@ -31,6 +31,7 @@ void processLaserScan(const sensor_msgs::LaserScan::ConstPtr& scan)
 				msg.pose.covariance.elems[7] = 0.25;
 				msg.pose.covariance.elems[35] = 0.06853891945200942;
 				pose_pub.publish(msg);
+				ROS_INFO("Publishing initial pose.");
 				localized = true;
 			}
 			catch(...)
@@ -40,12 +41,13 @@ void processLaserScan(const sensor_msgs::LaserScan::ConstPtr& scan)
 	}
 	else
 	{
+		ROS_INFO_THROTTLE(5.0, "No listeners, awaiting subscriptions...");
 		localized = false;
 	}
 }
 
 int main(int argc, char** argv) {
-    ROS_INFO("Waiting for map and laserscan messages...");
+    ROS_INFO("Initializing global localization...");
     ros::init(argc, argv, "m3rsm_global_localization");
 
     ros::NodeHandle nh;
@@ -69,6 +71,7 @@ int main(int argc, char** argv) {
    // Request laser scan message
     ros::Subscriber scanSub = nh.subscribe<sensor_msgs::LaserScan>("frontLaser", 10, &processLaserScan);
 
+    ROS_INFO("Global localization ready.");
     ros::spin();
     return 0;
 }
