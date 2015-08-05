@@ -67,6 +67,7 @@ void GlobalLocalization::processMap(const nav_msgs::OccupancyGrid& map_msg) {
     field->initializeLikelyHoodFieldMap();
     map_frame_id = map_msg.header.frame_id;
     map_stamp = map_msg.header.stamp;
+    ROS_INFO("Done.");
     
 }
 
