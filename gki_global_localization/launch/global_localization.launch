@@ -1,6 +1,6 @@
 <launch>
-<node name="$(env ROS_HOSTNAME)_m3rsm_global_localization"
-pkg="m3rsm_global_localization" type="m3rsm_global_localization" output="screen">
+<node name="$(env ROS_HOSTNAME)_gki_global_localization"
+pkg="gki_global_localization" type="gki_global_localization" output="screen">
 <param name="laser_sigma_hit" value="0.2"/>
 <param name="laser_z_rand" value="0.05"/>
 <param name="laser_z_hit" value="0.95"/>
