@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>m3rsm_global_localization</name>
+  <name>gki_global_localization</name>
   <version>0.0.1</version>
-  <description>The m3rsm_global_localization package</description>
+  <description>The gki_global_localization package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
