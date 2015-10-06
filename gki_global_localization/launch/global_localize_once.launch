@@ -4,6 +4,7 @@
 		<param name="laser_z_rand" value="0.05"/>
 		<param name="laser_z_hit" value="0.95"/>
 		<param name="laser_max_range" value="29.0"/>
+		<param name="base_frame" value="base_link"/>
 
 		<remap from="frontLaser" to="base_scan" />
 		<remap from="localized_pose" to="initialpose" />
