@@ -1,4 +1,5 @@
 #include "global_localization.h"
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 
 int main(int argc, char** argv) {
     ROS_INFO("Waiting for map and laserscan messages...");

@@ -108,7 +108,7 @@ private:
     // element with the highest probability
     std::priority_queue<Entry> heap;
     // We rotate the poses one time for each angle and index them 
-    std::vector<std::vector<tf::Vector3>> rotatedPoses;
+    std::vector<std::vector<tf::Vector3> > rotatedPoses;
 
     // Computes the distance from this pose to the nearest obstacle
     double distanceToNearestObstacle(int const& pose_x, int const& pose_y) const;

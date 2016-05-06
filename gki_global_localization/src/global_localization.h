@@ -19,12 +19,14 @@ public:
         z_rand(z_rand_),
         z_hit(z_hit_),
         laser_max_range(max_range),
-        pose_pub(ppub) {}
+        pose_pub(ppub),
+        map(NULL),
+		field(NULL){}
 
 
    void processMap(const nav_msgs::OccupancyGrid& msg); 
    void processLaserScan(const sensor_msgs::LaserScan::ConstPtr& scan);
-   tf::Pose globalLocalization();
+   tf::Stamped<tf::Pose> globalLocalization(const sensor_msgs::LaserScan::ConstPtr& scan);
 
    LikelyHoodField* field;
 

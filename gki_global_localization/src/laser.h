@@ -35,9 +35,9 @@ public:
                     continue;
                 }
 
-                auto angle = scan->angle_min + i * scan->angle_increment;
-                auto x = cos(angle) * scan->ranges[i];
-                auto y = sin(angle) * scan->ranges[i];
+                double angle = scan->angle_min + i * scan->angle_increment;
+                double x = cos(angle) * scan->ranges[i];
+                double y = sin(angle) * scan->ranges[i];
                 tf::Vector3 range(x,y,0);
                 ranges.push_back(range);
             }
