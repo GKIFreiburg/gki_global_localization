@@ -26,7 +26,7 @@ public:
 
    void processMap(const nav_msgs::OccupancyGrid& msg); 
    void processLaserScan(const sensor_msgs::LaserScan::ConstPtr& scan);
-   tf::Stamped<tf::Pose> globalLocalization(const sensor_msgs::LaserScan::ConstPtr& scan);
+   tf::Stamped<tf::Pose> localize(const sensor_msgs::LaserScan::ConstPtr& scan);
 
    LikelyHoodField* field;
 

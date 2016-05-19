@@ -1,4 +1,5 @@
 #include "global_localization.h"
+#include "MapDataMissingException.h"
 
 
 void GlobalLocalization::processMap(const nav_msgs::OccupancyGrid& map_msg) {
@@ -67,13 +68,13 @@ void GlobalLocalization::processMap(const nav_msgs::OccupancyGrid& map_msg) {
     field->initializeLikelyHoodFieldMap();
     map_frame_id = map_msg.header.frame_id;
     map_stamp = map_msg.header.stamp;
-    ROS_INFO("Done.");
+    ROS_INFO("Map data processed.");
 }
 
 void GlobalLocalization::processLaserScan(const sensor_msgs::LaserScan::ConstPtr& scan) {
-    ROS_INFO("Laser scan received");
+    ROS_INFO("Laser scan received.");
     try {
-        tf::Stamped<tf::Pose> localizedPose = globalLocalization(scan);
+        tf::Stamped<tf::Pose> localizedPose = localize(scan);
         ROS_INFO("Global pose is: %.3f %.3f %.3f",
                 localizedPose.getOrigin().x(),
                 localizedPose.getOrigin().y(),
@@ -86,18 +87,16 @@ void GlobalLocalization::processLaserScan(const sensor_msgs::LaserScan::ConstPtr
     }
 }
 
-tf::Stamped<tf::Pose> GlobalLocalization::globalLocalization(
-        const sensor_msgs::LaserScan::ConstPtr& scan) {
+tf::Stamped<tf::Pose> GlobalLocalization::localize(const sensor_msgs::LaserScan::ConstPtr& scan) {
     if (field == NULL) {
         ROS_INFO_THROTTLE(1.0, "Waiting for map data...");
-        throw "No map data available!";
+        throw MapDataMissingException("No map data available!");
     }
-    ROS_INFO("Initiating global localization...");
+    ROS_INFO("likelyhood grid initialized.");
     data = LaserData(scan, laser_max_range);
     ros::Time start = ros::Time::now();
-    tf::Stamped<tf::Pose> stampedPose(field->likelyHoodFieldModel(data),
-            scan->header.stamp, map_frame_id);
+    tf::Stamped<tf::Pose> stampedPose(field->likelyHoodFieldModel(data), scan->header.stamp, map_frame_id);
     double time_elapsed = (ros::Time::now() - start).toSec();
-    ROS_INFO("Global localization took %.3f seconds", time_elapsed);
+    ROS_INFO("localization took %.3f seconds", time_elapsed);
     return stampedPose;
 } 

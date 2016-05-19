@@ -6,7 +6,7 @@
 		<param name="laser_max_range" value="29.0"/>
 		<param name="base_frame" value="base_link"/>
 
-		<remap from="frontLaser" to="base_scan" />
+		<remap from="scan" to="base_scan" />
 		<remap from="localized_pose" to="initialpose" />
 	</node>
 </launch>
